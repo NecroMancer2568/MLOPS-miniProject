@@ -1,6 +1,6 @@
 {
   "input_directory": "data",
-  "output_directory": "data/processed",
+  "output_directory": "data\\processed",
   "imputation": {
     "strategy": "group_median",
     "global_median": 62,
@@ -35,8 +35,8 @@
     }
   },
   "output_files": [
-    "data/processed/train_clean.csv",
-    "data/processed/later_clean.csv",
-    "data/processed/holdout_clean.csv"
+    "data\\processed\\train_clean.csv",
+    "data\\processed\\later_clean.csv",
+    "data\\processed\\holdout_clean.csv"
   ]
 }
