@@ -1,0 +1,6 @@
+.venv
+.DS_Store
+__pycache__/
+*.py[cod]
+data/later.csv
+data/train.csv
