@@ -4,3 +4,7 @@ __pycache__/
 *.py[cod]
 data/later.csv
 data/train.csv
+mlruns/
+mlartifacts/
+mlruns/
+mlartifacts/

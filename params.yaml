@@ -1,0 +1,33 @@
+data:
+  raw_train_path: "data/train.csv"
+  raw_later_path: "data/later.csv"
+  raw_holdout_path: "data/holdout_features.csv"
+  processed_train_path: "data/processed/train_clean.csv"
+
+features:
+  numeric:
+    - "nearby_shops"
+    - "days_to_salary"
+    - "footfall_index"
+    - "distance_to_market_km"
+    - "avg_ticket_rs"
+    - "other_atms_1km"
+  categorical:
+    - "atm_type"
+    - "area"
+  target: "withdrawal_thousand_rs"
+
+cleaning:
+  sentinel_nearby_shops: -999
+  unit_mixup_area: "Market"
+  unit_mixup_factor: 1000.0
+  target_typo_threshold: 1000.0
+  target_typo_factor: 10.0
+
+training:
+  cv_folds: 5
+  random_state: 42
+  experiment_name: "MP076_ATM_Cash_Demand"
+  registered_model_name: "mp076_atm_demand"
+  model_export_path: "models/model.joblib"
+  tracking_uri: "sqlite:///mlflow.db"
