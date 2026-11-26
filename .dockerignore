@@ -1,0 +1,27 @@
+# Version control & virtual environments
+.git/
+.gitignore
+.venv/
+.dvc/
+.dvcignore
+
+# Datasets & MLflow local artifacts
+data/
+mlruns/
+mlartifacts/
+mlflow.db
+predictions/
+reports/
+
+# Tests & temporary caches
+tests/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.DS_Store
+
+# Documentation & Kubernetes manifests
+*.md
+k8s/
+eval/
