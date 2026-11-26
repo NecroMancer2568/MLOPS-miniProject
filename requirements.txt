@@ -1,0 +1,21 @@
+# Core scientific & tabular data stack
+numpy==2.5.4
+pandas==3.0.6
+scipy==1.18.1
+scikit-learn==1.9.1
+joblib==1.6.0
+pyyaml==6.0.3
+
+# Experiment tracking & data versioning
+mlflow==3.17.2
+dvc==3.67.1
+
+# API serving & observability
+fastapi==0.156.4
+uvicorn==0.54.0
+pydantic==2.14.1
+prometheus_client==0.26.0
+
+# Testing & HTTP client
+pytest==9.1.1
+httpx==0.28.1

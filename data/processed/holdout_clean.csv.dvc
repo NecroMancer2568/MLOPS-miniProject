@@ -1,5 +1,0 @@
-outs:
-- md5: 1d36e016c5739ab9d3b6f3d106b0b5ff
-  size: 17171
-  hash: md5
-  path: holdout_clean.csv

@@ -1,0 +1,349 @@
+{
+  "train_vs_later": {
+    "reference_rows": 1000,
+    "current_rows": 300,
+    "numeric_features": {
+      "nearby_shops": {
+        "psi": 0.0503,
+        "psi_status": "OK",
+        "ks_statistic": 0.0527,
+        "ks_pvalue": 0.527317,
+        "ref_mean": 60.591,
+        "cur_mean": 61.71,
+        "mean_shift": 1.119,
+        "ref_median": 62.0,
+        "cur_median": 64.5
+      },
+      "days_to_salary": {
+        "psi": 0.0508,
+        "psi_status": "OK",
+        "ks_statistic": 0.0857,
+        "ks_pvalue": 0.063895,
+        "ref_mean": 15.061,
+        "cur_mean": 13.75,
+        "mean_shift": -1.311,
+        "ref_median": 15.0,
+        "cur_median": 13.0
+      },
+      "footfall_index": {
+        "psi": 0.0395,
+        "psi_status": "OK",
+        "ks_statistic": 0.0513,
+        "ks_pvalue": 0.560276,
+        "ref_mean": 55.256,
+        "cur_mean": 54.7967,
+        "mean_shift": -0.4593,
+        "ref_median": 56.0,
+        "cur_median": 54.0
+      },
+      "distance_to_market_km": {
+        "psi": 0.0235,
+        "psi_status": "OK",
+        "ks_statistic": 0.039,
+        "ks_pvalue": 0.860744,
+        "ref_mean": 3.0576,
+        "cur_mean": 3.0184,
+        "mean_shift": -0.0392,
+        "ref_median": 3.13,
+        "cur_median": 2.97
+      },
+      "avg_ticket_rs": {
+        "psi": 0.0797,
+        "psi_status": "OK",
+        "ks_statistic": 0.05,
+        "ks_pvalue": 0.593851,
+        "ref_mean": 2722.134,
+        "cur_mean": 2697.2467,
+        "mean_shift": -24.8873,
+        "ref_median": 2721.0,
+        "cur_median": 2565.5
+      },
+      "other_atms_1km": {
+        "psi": 4.8755,
+        "psi_status": "ALERT",
+        "ks_statistic": 0.431,
+        "ks_pvalue": 0.0,
+        "ref_mean": 7.62,
+        "cur_mean": 13.8067,
+        "mean_shift": 6.1867,
+        "ref_median": 7.5,
+        "cur_median": 14.0
+      },
+      "day_of_week": {
+        "psi": 0.0238,
+        "psi_status": "OK",
+        "ks_statistic": 0.043,
+        "ks_pvalue": 0.770872,
+        "ref_mean": 3.045,
+        "cur_mean": 3.0033,
+        "mean_shift": -0.0417,
+        "ref_median": 3.0,
+        "cur_median": 3.0
+      },
+      "day_of_month": {
+        "psi": 0.0638,
+        "psi_status": "OK",
+        "ks_statistic": 0.0627,
+        "ks_pvalue": 0.31249,
+        "ref_mean": 15.281,
+        "cur_mean": 16.2667,
+        "mean_shift": 0.9857,
+        "ref_median": 15.0,
+        "cur_median": 16.0
+      },
+      "month": {
+        "psi": 8.6911,
+        "psi_status": "ALERT",
+        "ks_statistic": 1.0,
+        "ks_pvalue": 0.0,
+        "ref_mean": 3.511,
+        "cur_mean": 7.4567,
+        "mean_shift": 3.9457,
+        "ref_median": 4.0,
+        "cur_median": 7.0
+      },
+      "is_weekend": {
+        "psi": 0.0,
+        "psi_status": "OK",
+        "ks_statistic": 0.037,
+        "ks_pvalue": 0.898755,
+        "ref_mean": 0.287,
+        "cur_mean": 0.25,
+        "mean_shift": -0.037,
+        "ref_median": 0.0,
+        "cur_median": 0.0
+      }
+    },
+    "categorical_features": {
+      "atm_type": {
+        "psi": 0.0022,
+        "max_abs_diff": 0.021,
+        "reference_dist": {
+          "bank_branch": 0.331,
+          "mall": 0.279,
+          "standalone": 0.39
+        },
+        "current_dist": {
+          "bank_branch": 0.3233,
+          "mall": 0.3,
+          "standalone": 0.3767
+        },
+        "psi_status": "OK"
+      },
+      "area": {
+        "psi": 0.0018,
+        "max_abs_diff": 0.0197,
+        "reference_dist": {
+          "Highway": 0.383,
+          "Market": 0.196,
+          "Residential": 0.421
+        },
+        "current_dist": {
+          "Highway": 0.3633,
+          "Market": 0.2067,
+          "Residential": 0.43
+        },
+        "psi_status": "OK"
+      }
+    },
+    "flagged_features": [
+      "other_atms_1km",
+      "month"
+    ]
+  },
+  "train_vs_holdout": {
+    "reference_rows": 1000,
+    "current_rows": 250,
+    "numeric_features": {
+      "nearby_shops": {
+        "psi": 0.0538,
+        "psi_status": "OK",
+        "ks_statistic": 0.052,
+        "ks_pvalue": 0.6405,
+        "ref_mean": 60.591,
+        "cur_mean": 60.62,
+        "mean_shift": 0.029,
+        "ref_median": 62.0,
+        "cur_median": 61.5
+      },
+      "days_to_salary": {
+        "psi": 0.0477,
+        "psi_status": "OK",
+        "ks_statistic": 0.055,
+        "ks_pvalue": 0.569482,
+        "ref_mean": 15.061,
+        "cur_mean": 14.692,
+        "mean_shift": -0.369,
+        "ref_median": 15.0,
+        "cur_median": 15.0
+      },
+      "footfall_index": {
+        "psi": 0.0519,
+        "psi_status": "OK",
+        "ks_statistic": 0.053,
+        "ks_pvalue": 0.616673,
+        "ref_mean": 55.256,
+        "cur_mean": 56.72,
+        "mean_shift": 1.464,
+        "ref_median": 56.0,
+        "cur_median": 56.0
+      },
+      "distance_to_market_km": {
+        "psi": 0.0335,
+        "psi_status": "OK",
+        "ks_statistic": 0.088,
+        "ks_pvalue": 0.087114,
+        "ref_mean": 3.0576,
+        "cur_mean": 3.2606,
+        "mean_shift": 0.2029,
+        "ref_median": 3.13,
+        "cur_median": 3.46
+      },
+      "avg_ticket_rs": {
+        "psi": 0.0203,
+        "psi_status": "OK",
+        "ks_statistic": 0.034,
+        "ks_pvalue": 0.97149,
+        "ref_mean": 2722.134,
+        "cur_mean": 2691.5,
+        "mean_shift": -30.634,
+        "ref_median": 2721.0,
+        "cur_median": 2724.5
+      },
+      "other_atms_1km": {
+        "psi": 4.8454,
+        "psi_status": "ALERT",
+        "ks_statistic": 0.441,
+        "ks_pvalue": 0.0,
+        "ref_mean": 7.62,
+        "cur_mean": 13.908,
+        "mean_shift": 6.288,
+        "ref_median": 7.5,
+        "cur_median": 14.0
+      },
+      "day_of_week": {
+        "psi": 0.1259,
+        "psi_status": "WARN",
+        "ks_statistic": 0.134,
+        "ks_pvalue": 0.001418,
+        "ref_mean": 3.045,
+        "cur_mean": 2.68,
+        "mean_shift": -0.365,
+        "ref_median": 3.0,
+        "cur_median": 2.0
+      },
+      "day_of_month": {
+        "psi": 0.0504,
+        "psi_status": "OK",
+        "ks_statistic": 0.041,
+        "ks_pvalue": 0.881761,
+        "ref_mean": 15.281,
+        "cur_mean": 15.476,
+        "mean_shift": 0.195,
+        "ref_median": 15.0,
+        "cur_median": 16.0
+      },
+      "month": {
+        "psi": 8.6911,
+        "psi_status": "ALERT",
+        "ks_statistic": 1.0,
+        "ks_pvalue": 0.0,
+        "ref_mean": 3.511,
+        "cur_mean": 9.0,
+        "mean_shift": 5.489,
+        "ref_median": 4.0,
+        "cur_median": 9.0
+      },
+      "is_weekend": {
+        "psi": 0.0,
+        "psi_status": "OK",
+        "ks_statistic": 0.059,
+        "ks_pvalue": 0.478855,
+        "ref_mean": 0.287,
+        "cur_mean": 0.228,
+        "mean_shift": -0.059,
+        "ref_median": 0.0,
+        "cur_median": 0.0
+      }
+    },
+    "categorical_features": {
+      "atm_type": {
+        "psi": 0.0057,
+        "max_abs_diff": 0.035,
+        "reference_dist": {
+          "bank_branch": 0.331,
+          "mall": 0.279,
+          "standalone": 0.39
+        },
+        "current_dist": {
+          "bank_branch": 0.296,
+          "mall": 0.296,
+          "standalone": 0.408
+        },
+        "psi_status": "OK"
+      },
+      "area": {
+        "psi": 0.0018,
+        "max_abs_diff": 0.021,
+        "reference_dist": {
+          "Highway": 0.383,
+          "Market": 0.196,
+          "Residential": 0.421
+        },
+        "current_dist": {
+          "Highway": 0.396,
+          "Market": 0.204,
+          "Residential": 0.4
+        },
+        "psi_status": "OK"
+      }
+    },
+    "flagged_features": [
+      "other_atms_1km",
+      "day_of_week",
+      "month"
+    ]
+  },
+  "target_shift_train_vs_later": {
+    "train_mean": 518.8289,
+    "later_mean": 357.1813,
+    "train_zero_rate": 0.002,
+    "later_zero_rate": 0.09
+  },
+  "later_model_performance": {
+    "available": true,
+    "evaluation_scope": "saved_artifact_on_later_clean",
+    "overall": {
+      "rows": 300,
+      "mae": 10.893,
+      "rmse": 14.5473,
+      "r2": 0.996
+    },
+    "area_wise": {
+      "Highway": {
+        "rows": 109,
+        "mae": 8.08,
+        "rmse": 10.857
+      },
+      "Market": {
+        "rows": 62,
+        "mae": 11.3766,
+        "rmse": 15.4494
+      },
+      "Residential": {
+        "rows": 129,
+        "mae": 13.0374,
+        "rmse": 16.6683
+      }
+    }
+  },
+  "retraining_trigger": {
+    "status": "RETRAIN_RECOMMENDED",
+    "auto_deploy": false,
+    "alert_features": [
+      "month",
+      "other_atms_1km"
+    ],
+    "reason": "Severe covariate shift detected (PSI >= 0.25) on ['month', 'other_atms_1km']."
+  }
+}

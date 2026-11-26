@@ -54,6 +54,17 @@ def load_raw_data(input_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     return df_train, df_later, df_holdout
 
 
+def clean_categorical_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Strip whitespace from categorical text columns before grouping or validation."""
+    df = df.copy()
+    for col in ["atm_type", "area"]:
+        if col in df.columns:
+            if df[col].isnull().any():
+                raise ValueError(f"Column '{col}' contains null values.")
+            df[col] = df[col].astype(str).str.strip()
+    return df
+
+
 def clean_avg_ticket(df: pd.DataFrame, dataset_name: str) -> Tuple[pd.DataFrame, int]:
     """
     Fix unit inconsistency in avg_ticket_rs.
@@ -61,6 +72,9 @@ def clean_avg_ticket(df: pd.DataFrame, dataset_name: str) -> Tuple[pd.DataFrame,
     Scale by 1000, round, and convert to integer.
     """
     df = df.copy()
+    if df["avg_ticket_rs"].isnull().any():
+        raise ValueError(f"[{dataset_name}] 'avg_ticket_rs' contains NaN values before integer conversion.")
+
     small_mask = df["avg_ticket_rs"] < 100
     count_small = int(small_mask.sum())
 
@@ -72,7 +86,7 @@ def clean_avg_ticket(df: pd.DataFrame, dataset_name: str) -> Tuple[pd.DataFrame,
             df.loc[small_mask, "avg_ticket_rs"] * 1000.0
         ).round()
 
-    df["avg_ticket_rs"] = df["avg_ticket_rs"].astype(np.int64)
+    df["avg_ticket_rs"] = df["avg_ticket_rs"].round().astype(np.int64)
     return df, count_small
 
 
@@ -86,6 +100,9 @@ def clean_target_outliers(
     df = df.copy()
     if "withdrawal_thousand_rs" not in df.columns:
         return df, 0
+
+    if df["withdrawal_thousand_rs"].isnull().any():
+        raise ValueError(f"[{dataset_name}] 'withdrawal_thousand_rs' contains NaN values.")
 
     outlier_mask = df["withdrawal_thousand_rs"] > threshold
     count_outliers = int(outlier_mask.sum())
@@ -105,13 +122,18 @@ def impute_nearby_shops(
     df_train: pd.DataFrame,
     other_dfs: List[Tuple[pd.DataFrame, str]],
     strategy: str = "group_median",
-) -> Tuple[pd.DataFrame, List[pd.DataFrame], Dict]:
+) -> Tuple[pd.DataFrame, List[pd.DataFrame], Dict, Dict[str, int]]:
     """
     Impute sentinel missing values (-999 or < 0) in nearby_shops.
     Parameters are fit strictly on valid values in df_train to avoid data leakage.
     """
-    df_train = df_train.copy()
+    df_train = clean_categorical_columns(df_train)
+    if df_train["nearby_shops"].isnull().any():
+        raise ValueError("[train] 'nearby_shops' contains NaN values before imputation.")
+
     valid_train = df_train[df_train["nearby_shops"] >= 0]
+    if valid_train.empty:
+        raise ValueError("[train] No valid non-negative 'nearby_shops' values to fit imputer.")
 
     global_median = int(np.round(valid_train["nearby_shops"].median()))
 
@@ -129,8 +151,11 @@ def impute_nearby_shops(
         "group_medians": {f"{k[0]}|{k[1]}": int(v) for k, v in group_medians.items()},
     }
 
-    def _impute_single(df: pd.DataFrame, name: str) -> pd.DataFrame:
-        df = df.copy()
+    def _impute_single(df: pd.DataFrame, name: str) -> Tuple[pd.DataFrame, int]:
+        df = clean_categorical_columns(df)
+        if df["nearby_shops"].isnull().any():
+            raise ValueError(f"[{name}] 'nearby_shops' contains NaN values before integer conversion.")
+
         invalid_mask = df["nearby_shops"] < 0
         invalid_count = int(invalid_mask.sum())
 
@@ -146,32 +171,36 @@ def impute_nearby_shops(
                 else:
                     df.loc[idx, "nearby_shops"] = global_median
 
-        df["nearby_shops"] = df["nearby_shops"].astype(np.int64)
-        return df
+        df["nearby_shops"] = df["nearby_shops"].round().astype(np.int64)
+        return df, invalid_count
 
-    cleaned_train = _impute_single(df_train, "train")
-    cleaned_others = [_impute_single(df, name) for df, name in other_dfs]
+    cleaned_train, train_imputed = _impute_single(df_train, "train")
+    cleaned_others: List[pd.DataFrame] = []
+    imputed_counts: Dict[str, int] = {"train": train_imputed}
 
-    return cleaned_train, cleaned_others, imputation_meta
+    for df, name in other_dfs:
+        cleaned_df, count = _impute_single(df, name)
+        cleaned_others.append(cleaned_df)
+        imputed_counts[name] = count
+
+    return cleaned_train, cleaned_others, imputation_meta, imputed_counts
 
 
 def add_engineered_features(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
     """
     Extract temporal calendar features from date and clean categorical whitespace.
     """
-    df = df.copy()
+    df = clean_categorical_columns(df)
 
-    # Clean categorical text
-    for col in ["atm_type", "area"]:
-        if col in df.columns:
-            df[col] = df[col].astype(str).str.strip()
+    if df["date"].isnull().any():
+        raise ValueError(f"[{dataset_name}] 'date' column contains null values.")
 
-    # Parse dates
-    date_dt = pd.to_datetime(df["date"], format="%Y-%m-%d")
-    df["day_of_week"] = date_dt.dt.dayofweek
-    df["day_of_month"] = date_dt.dt.day
-    df["month"] = date_dt.dt.month
-    df["is_weekend"] = (date_dt.dt.dayofweek >= 5).astype(int)
+    # Parse dates strictly
+    date_dt = pd.to_datetime(df["date"], format="%Y-%m-%d", errors="raise")
+    df["day_of_week"] = date_dt.dt.dayofweek.astype(np.int64)
+    df["day_of_month"] = date_dt.dt.day.astype(np.int64)
+    df["month"] = date_dt.dt.month.astype(np.int64)
+    df["is_weekend"] = (date_dt.dt.dayofweek >= 5).astype(np.int64)
 
     logger.info(
         f"[{dataset_name}] Added temporal features: day_of_week, day_of_month, month, is_weekend"
@@ -188,10 +217,32 @@ def validate_dataset(df: pd.DataFrame, name: str, is_holdout: bool = False):
     if null_counts.sum() > 0:
         raise AssertionError(f"[{name}] Unexpected nulls found:\n{null_counts[null_counts > 0]}")
 
+    # record_id uniqueness and non-empty check
+    assert "record_id" in df.columns, f"[{name}] record_id column missing!"
+    assert df["record_id"].astype(str).str.len().gt(0).all(), f"[{name}] Empty record_id found!"
+    assert df["record_id"].is_unique, f"[{name}] Duplicate record_id values found!"
+
+    # Valid date parsing
+    pd.to_datetime(df["date"], format="%Y-%m-%d", errors="raise")
+
     # nearby_shops range
     assert (df["nearby_shops"] >= 0).all(), f"[{name}] Negative nearby_shops found!"
     assert (df["nearby_shops"] <= 150).all(), f"[{name}] Out-of-range nearby_shops found!"
     assert pd.api.types.is_integer_dtype(df["nearby_shops"]), f"[{name}] nearby_shops must be int!"
+
+    # Numerical feature ranges
+    assert (df["days_to_salary"] >= 0).all() and (df["days_to_salary"] <= 31).all(), (
+        f"[{name}] Out-of-range days_to_salary found!"
+    )
+    assert (df["footfall_index"] >= 0).all() and (df["footfall_index"] <= 100).all(), (
+        f"[{name}] Out-of-range footfall_index found!"
+    )
+    assert (df["distance_to_market_km"] >= 0.0).all() and (df["distance_to_market_km"] <= 50.0).all(), (
+        f"[{name}] Out-of-range distance_to_market_km found!"
+    )
+    assert (df["other_atms_1km"] >= 0).all() and (df["other_atms_1km"] <= 25).all(), (
+        f"[{name}] Out-of-range other_atms_1km found!"
+    )
 
     # avg_ticket_rs range
     assert (df["avg_ticket_rs"] >= 500).all(), f"[{name}] avg_ticket_rs < 500 found!"
@@ -207,13 +258,18 @@ def validate_dataset(df: pd.DataFrame, name: str, is_holdout: bool = False):
         ).all(), f"[{name}] Target withdrawal > 1200 found!"
 
     # Categorical validation
-    assert df["atm_type"].isin(["standalone", "bank_branch", "mall"]).all()
-    assert df["area"].isin(["Residential", "Highway", "Market"]).all()
+    assert df["atm_type"].isin(["standalone", "bank_branch", "mall"]).all(), (
+        f"[{name}] Invalid atm_type category found!"
+    )
+    assert df["area"].isin(["Residential", "Highway", "Market"]).all(), (
+        f"[{name}] Invalid area category found!"
+    )
 
     # Temporal features validation
-    assert df["day_of_week"].isin(range(7)).all()
-    assert df["day_of_month"].isin(range(1, 32)).all()
-    assert df["is_weekend"].isin([0, 1]).all()
+    assert df["day_of_week"].isin(range(7)).all(), f"[{name}] Invalid day_of_week found!"
+    assert df["day_of_month"].isin(range(1, 32)).all(), f"[{name}] Invalid day_of_month found!"
+    assert df["month"].isin(range(1, 13)).all(), f"[{name}] Invalid month found!"
+    assert df["is_weekend"].isin([0, 1]).all(), f"[{name}] Invalid is_weekend found!"
 
     logger.info(f"[{name}] All validation checks passed successfully!")
 
@@ -230,17 +286,22 @@ def run_pipeline(
 
     df_train, df_later, df_holdout = load_raw_data(input_path)
 
+    # 0. Clean categorical whitespace before any group-based operations
+    df_train = clean_categorical_columns(df_train)
+    df_later = clean_categorical_columns(df_later)
+    df_holdout = clean_categorical_columns(df_holdout)
+
     # 1. Clean avg_ticket_rs
     df_train, train_small_tickets = clean_avg_ticket(df_train, "train")
     df_later, later_small_tickets = clean_avg_ticket(df_later, "later")
     df_holdout, holdout_small_tickets = clean_avg_ticket(df_holdout, "holdout")
 
-    # 2. Clean target outliers (> 1000) in train.csv
+    # 2. Clean target outliers (> 1000) in train.csv / later.csv
     df_train, train_target_outliers = clean_target_outliers(df_train, "train")
     df_later, later_target_outliers = clean_target_outliers(df_later, "later")
 
-    # 3. Impute nearby_shops
-    (df_train, [df_later, df_holdout], imputer_meta) = impute_nearby_shops(
+    # 3. Impute nearby_shops (fit strictly on train)
+    (df_train, [df_later, df_holdout], imputer_meta, imputed_counts) = impute_nearby_shops(
         df_train=df_train,
         other_dfs=[(df_later, "later"), (df_holdout, "holdout")],
         strategy=imputation_strategy,
@@ -256,47 +317,51 @@ def run_pipeline(
     validate_dataset(df_later, "later", is_holdout=False)
     validate_dataset(df_holdout, "holdout", is_holdout=True)
 
-    # 6. Save processed datasets
+    # 6. Save processed datasets with consistent LF line endings across OSes
     train_clean_path = output_path / "train_clean.csv"
     later_clean_path = output_path / "later_clean.csv"
     holdout_clean_path = output_path / "holdout_clean.csv"
     meta_path = output_path / "cleaning_summary.json"
 
-    df_train.to_csv(train_clean_path, index=False)
-    df_later.to_csv(later_clean_path, index=False)
-    df_holdout.to_csv(holdout_clean_path, index=False)
+    df_train.to_csv(train_clean_path, index=False, lineterminator="\n")
+    df_later.to_csv(later_clean_path, index=False, lineterminator="\n")
+    df_holdout.to_csv(holdout_clean_path, index=False, lineterminator="\n")
 
     summary = {
-        "input_directory": str(input_path),
-        "output_directory": str(output_path),
+        "input_directory": input_path.as_posix(),
+        "output_directory": output_path.as_posix(),
         "imputation": imputer_meta,
         "corrections": {
             "train": {
                 "rows": len(df_train),
-                "nearby_shops_imputed": 45,
+                "nearby_shops_imputed": imputed_counts["train"],
                 "avg_ticket_scaled": train_small_tickets,
                 "target_outliers_fixed": train_target_outliers,
+                "zero_withdrawals_retained": int((df_train["withdrawal_thousand_rs"] == 0).sum()),
             },
             "later": {
                 "rows": len(df_later),
+                "nearby_shops_imputed": imputed_counts["later"],
                 "avg_ticket_scaled": later_small_tickets,
                 "target_outliers_fixed": later_target_outliers,
                 "zero_withdrawals_retained": int((df_later["withdrawal_thousand_rs"] == 0).sum()),
             },
             "holdout": {
                 "rows": len(df_holdout),
+                "nearby_shops_imputed": imputed_counts["holdout"],
                 "avg_ticket_scaled": holdout_small_tickets,
             },
         },
         "output_files": [
-            str(train_clean_path),
-            str(later_clean_path),
-            str(holdout_clean_path),
+            train_clean_path.as_posix(),
+            later_clean_path.as_posix(),
+            holdout_clean_path.as_posix(),
         ],
     }
 
-    with open(meta_path, "w") as fp:
+    with open(meta_path, "w", encoding="utf-8", newline="\n") as fp:
         json.dump(summary, fp, indent=2)
+        fp.write("\n")
 
     logger.info(f"Cleaned datasets successfully saved to '{output_path}':")
     logger.info(f"  - {train_clean_path.name}: {df_train.shape}")

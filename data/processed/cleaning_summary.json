@@ -1,6 +1,6 @@
 {
   "input_directory": "data",
-  "output_directory": "data\\processed",
+  "output_directory": "data/processed",
   "imputation": {
     "strategy": "group_median",
     "global_median": 62,
@@ -21,22 +21,25 @@
       "rows": 1000,
       "nearby_shops_imputed": 45,
       "avg_ticket_scaled": 196,
-      "target_outliers_fixed": 9
+      "target_outliers_fixed": 9,
+      "zero_withdrawals_retained": 2
     },
     "later": {
       "rows": 300,
+      "nearby_shops_imputed": 0,
       "avg_ticket_scaled": 0,
       "target_outliers_fixed": 0,
       "zero_withdrawals_retained": 27
     },
     "holdout": {
       "rows": 250,
+      "nearby_shops_imputed": 0,
       "avg_ticket_scaled": 0
     }
   },
   "output_files": [
-    "data\\processed\\train_clean.csv",
-    "data\\processed\\later_clean.csv",
-    "data\\processed\\holdout_clean.csv"
+    "data/processed/train_clean.csv",
+    "data/processed/later_clean.csv",
+    "data/processed/holdout_clean.csv"
   ]
 }

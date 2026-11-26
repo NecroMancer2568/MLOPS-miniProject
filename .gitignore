@@ -2,5 +2,22 @@
 .DS_Store
 __pycache__/
 *.py[cod]
+.pytest_cache/
+mlruns/
+mlflow.db*
 data/later.csv
 data/train.csv
+
+# Local datasets
+data/holdout_features.csv
+
+# MLflow local tracking
+mlflow.db
+mlflow.db-*
+mlruns/
+
+# DVC local cache and temporary files
+.dvc/cache/
+.dvc/tmp/
+
+# Local generated files

@@ -1,0 +1,96 @@
+project: MP076 - ATM Cash Demand Prediction
+branch: manas
+audit_method: programmatic inspection of data/train.csv, data/later.csv, and data/holdout_features.csv
+
+datasets:
+  train:
+    path: data/train.csv
+    rows: 1000
+    columns: 11
+    date_range: "2026-01-01 to 2026-06-30"
+    sha256: "71ffb1e3cf9d8b9fbd2e48fd74919298a7a1593a2bd1bed7181dfa86958537c9"
+  later:
+    path: data/later.csv
+    rows: 300
+    columns: 11
+    date_range: "2026-07-01 to 2026-08-31"
+    sha256: "9a0f4b041245c28a42ede00e07b087046e2507c00d3072c81b697d82d4524289"
+  holdout:
+    path: data/holdout_features.csv
+    rows: 250
+    columns: 10
+    date_range: "2026-09-01 to 2026-09-30"
+    sha256: "24b801e9a97a5d15c5da1cb33f190fd8a0c000efb24cb1206c64b0f060a5f3d4"
+    target_available: false
+
+data_quality_issues:
+  data_leakage_columns:
+    status: verified_none_in_raw_features_identifiers_excluded
+    evidence:
+      - "Raw columns are record_id, date, nearby_shops, days_to_salary, footfall_index, distance_to_market_km, avg_ticket_rs, other_atms_1km, atm_type, area (+ withdrawal_thousand_rs in train/later)."
+      - "Numeric record_id index shows near-zero correlation with withdrawal_thousand_rs (r=0.0018 in train, r=0.0007 in later)."
+      - "No post-outcome or future target-derived columns exist in the feature schema."
+    impact: "Including record_id or raw date strings directly in ML features risks memorization or temporal leakage."
+    remediation: "Exclude record_id and raw date from model input features; derive only calendar features (day_of_week, day_of_month, month, is_weekend). Fit nearby_shops imputation and sklearn preprocessing strictly on training data."
+
+  avg_ticket_rs_unit_inconsistency:
+    status: verified_present_in_train
+    evidence:
+      - "train.csv has 196 of 1000 rows with avg_ticket_rs < 100 (range 0.5 to 4.99), recorded in thousand Rs instead of Rs."
+      - "Remaining 804 rows in train.csv range from 503.0 to 4996.0 Rs."
+      - "later.csv (533 to 4980) and holdout_features.csv (509 to 4990) have 0 rows < 100."
+    impact: "Without unit normalization, models treat thousand-Rs rows as ~1000x smaller ticket sizes."
+    remediation: "Scale values < 100 by 1000, round, and cast to int64; validate final range [500, 6000]."
+
+  sentinel_values:
+    status: verified_present_in_train
+    evidence:
+      - "train.csv has 45 of 1000 rows with nearby_shops == -999."
+      - "later.csv (min=0, max=120) and holdout_features.csv (min=0, max=120) have 0 negative values."
+    impact: "Treating -999 as a real count corrupts linear models, distance features, and summary statistics."
+    remediation: "Impute nearby_shops < 0 using (area, atm_type) group medians fit strictly on valid train rows (global median fallback: 62)."
+
+  duplicates:
+    status: verified_zero_duplicates
+    evidence:
+      - "train.csv: 0 exact duplicates, 0 duplicate record_id, 0 duplicate feature rows."
+      - "later.csv: 0 exact duplicates, 0 duplicate record_id, 0 duplicate feature rows."
+      - "holdout_features.csv: 0 exact duplicates, 0 duplicate record_id, 0 duplicate feature rows."
+    impact: "No duplicate inflation present in current snapshots."
+    remediation: "Enforce record_id uniqueness assertion in validate_dataset() to catch duplicates in future data drops."
+
+  stuck_sensor_values:
+    status: verified_no_stuck_feature_sensors_zero_floor_in_target
+    evidence:
+      - "Maximum consecutive identical value streak across numeric features is <= 3 (other_atms_1km max run=3; nearby_shops/days_to_salary/footfall_index/distance_to_market_km <= 2; avg_ticket_rs = 1)."
+      - "withdrawal_thousand_rs == 0.0 occurs 2 times in train.csv (0.2%) and 27 times in later.csv (9.0%, max consecutive run=3)."
+      - "Zero-withdrawal records in later.csv correspond to high ATM competition (mean other_atms_1km = 19.44 vs 13.25 for non-zero) and fewer nearby_shops (mean 34.04 vs 64.45)."
+    impact: "Zero withdrawals represent a genuine zero-demand floor rather than stuck sensor readings; standard linear models can predict negative values under high competition."
+    remediation: "Retain 0.0 withdrawal records as valid observations and apply non-negative prediction clipping (>= 0.0)."
+
+  target_decimal_10x_errors:
+    status: verified_present_in_train
+    evidence:
+      - "train.csv has 9 rows with withdrawal_thousand_rs > 1000 (7090.0, 4225.0, 3233.0, 6885.0, 3682.0, 6118.0, 6857.0, 3782.0, 4394.0)."
+      - "All remaining 991 rows in train.csv lie in [0.0, 950.0] (mean 518.87)."
+      - "later.csv has 0 rows > 1000 (max 894.2)."
+    impact: "10x target outliers severely distort squared error (RMSE) and inflate MAE/R2 estimates."
+    remediation: "Divide withdrawal_thousand_rs > 1000.0 by 10.0 and round to 1 decimal place (restoring [323.3, 709.0])."
+
+  categorical_spelling_variants:
+    status: verified_clean_in_current_snapshots
+    evidence:
+      - "atm_type unique values across train, later, holdout: ['bank_branch', 'standalone', 'mall'] with 0 whitespace/case variants."
+      - "area unique values across train, later, holdout: ['Highway', 'Market', 'Residential'] with 0 whitespace/case variants."
+    impact: "No dirty variants in current snapshots, though future batches could introduce trailing spaces."
+    remediation: "Strip whitespace before group imputation and assert exact allowed category sets in validate_dataset()."
+
+distribution_shift_observations:
+  train_to_later_and_holdout:
+    status: verified_significant_covariate_and_target_shift
+    evidence:
+      - "other_atms_1km increases from range [0, 15] (mean 7.62) in train to [6, 21] (mean 13.81) in later and [6, 21] (mean 13.91) in holdout."
+      - "other_atms_1km is strongly negatively correlated with withdrawal_thousand_rs (r=-0.757 in train, r=-0.825 in later)."
+      - "Mean cleaned withdrawal_thousand_rs shifts from 518.83 in train to 357.18 in later."
+    impact: "Models that cannot extrapolate beyond training feature bounds (e.g., tree models trained only on other_atms_1km <= 15) risk under-predicting competition effects on later/holdout (up to 21)."
+    remediation: "Evaluate models trained on train against later_clean.csv, compare linear/ridge extrapolation and tree models, and evaluate adaptation/retraining strategies incorporating later_clean.csv."

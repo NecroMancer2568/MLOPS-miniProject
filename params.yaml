@@ -1,0 +1,38 @@
+project:
+  id: MP076
+  name: ATM Cash Demand Prediction
+  target: withdrawal_thousand_rs
+  primary_metric: MAE
+
+paths:
+  raw_dir: data
+  processed_dir: data/processed
+  artifacts_dir: artifacts
+  predictions_dir: predictions
+  monitoring_dir: monitoring/reports
+  model_path: artifacts/best_model.joblib
+  metrics_path: artifacts/metrics.json
+  holdout_predictions_path: predictions/holdout_predictions.csv
+  drift_report_path: monitoring/reports/drift_report.json
+
+cleaning:
+  imputation_strategy: group_median
+  target_outlier_threshold: 1000.0
+  avg_ticket_unit_threshold: 100.0
+
+training:
+  random_state: 42
+  cv_splits: 5
+  chronological_holdout_frac: 0.2
+  later_adaptation_weight: 2.0
+  clip_non_negative: true
+  mlflow_experiment: MP076_ATM_Cash_Demand_Prediction
+  mlflow_tracking_uri: sqlite:///mlflow.db
+  registered_model_name: mp076-atm-cash-demand
+
+monitoring:
+  psi_bins: 10
+  psi_warn_threshold: 0.1
+  psi_alert_threshold: 0.25
+  ks_alpha: 0.05
+  mae_degradation_ratio_threshold: 1.25

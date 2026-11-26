@@ -1,0 +1,134 @@
+schema: '2.0'
+stages:
+  clean:
+    cmd: python -m scripts.dataset_cleaning.clean_and_preprocess --input-dir
+      data --output-dir data/processed --imputation-strategy group_median
+    deps:
+    - path: data/holdout_features.csv
+      hash: md5
+      md5: 3ccaadb1653c3189cb77a1ed57028666
+      size: 14961
+    - path: data/later.csv
+      hash: md5
+      md5: 7d0def66a7c5004a3ca12862fdefd4e0
+      size: 19384
+    - path: data/train.csv
+      hash: md5
+      md5: 295ee13bf1dbbfd1ceafacbeb96a4c6f
+      size: 65944
+    - path: scripts/dataset_cleaning/clean_and_preprocess.py
+      hash: md5
+      md5: 19f9cb1e462e3a87188be5b6237800de
+      size: 16217
+    params:
+      params.yaml:
+        cleaning.imputation_strategy: group_median
+    outs:
+    - path: data/processed/cleaning_summary.json
+      hash: md5
+      md5: bdf2e8649d36798ad2bce7db08d32d00
+      size: 1085
+    - path: data/processed/holdout_clean.csv
+      hash: md5
+      md5: a22d42883f822e2eaa580b945de7e3bd
+      size: 16920
+    - path: data/processed/later_clean.csv
+      hash: md5
+      md5: 6614159cc0ad6d566c331c1fd97eaf18
+      size: 22043
+    - path: data/processed/train_clean.csv
+      hash: md5
+      md5: ee042a2318a89e832ca934b727aaa187
+      size: 72981
+  train:
+    cmd: python -m src.train --params params.yaml
+    deps:
+    - path: data/processed/later_clean.csv
+      hash: md5
+      md5: 6614159cc0ad6d566c331c1fd97eaf18
+      size: 22043
+    - path: data/processed/train_clean.csv
+      hash: md5
+      md5: ee042a2318a89e832ca934b727aaa187
+      size: 72981
+    - path: src/features.py
+      hash: md5
+      md5: 2d8306db6ef69511964a664467f68619
+      size: 3773
+    - path: src/train.py
+      hash: md5
+      md5: 0b2cc6e682f0063ba599c2e40b7bf4f4
+      size: 14520
+    params:
+      params.yaml:
+        training.clip_non_negative: true
+        training.cv_splits: 5
+        training.later_adaptation_weight: 2.0
+        training.random_state: 42
+    outs:
+    - path: artifacts/best_model.joblib
+      hash: md5
+      md5: daf8e5d1d4f20c9f128422c46079d0b0
+      size: 631012
+    - path: artifacts/metrics.json
+      hash: md5
+      md5: 548fdd30f6f36e072d1888c15e5e5d27
+      size: 3683
+  predict:
+    cmd: python -m src.predict --params params.yaml
+    deps:
+    - path: artifacts/best_model.joblib
+      hash: md5
+      md5: daf8e5d1d4f20c9f128422c46079d0b0
+      size: 631012
+    - path: data/processed/holdout_clean.csv
+      hash: md5
+      md5: a22d42883f822e2eaa580b945de7e3bd
+      size: 16920
+    - path: src/features.py
+      hash: md5
+      md5: 2d8306db6ef69511964a664467f68619
+      size: 3773
+    - path: src/predict.py
+      hash: md5
+      md5: e1674b673ec96ea40354b3d9fc7e5f9e
+      size: 2818
+    outs:
+    - path: predictions/holdout_predictions.csv
+      hash: md5
+      md5: d30819c2bbffac055e97f8f40b6ad45b
+      size: 6225
+  monitor:
+    cmd: python -m monitoring.drift_monitor --params params.yaml
+    deps:
+    - path: artifacts/best_model.joblib
+      hash: md5
+      md5: daf8e5d1d4f20c9f128422c46079d0b0
+      size: 631012
+    - path: data/processed/holdout_clean.csv
+      hash: md5
+      md5: a22d42883f822e2eaa580b945de7e3bd
+      size: 16920
+    - path: data/processed/later_clean.csv
+      hash: md5
+      md5: 6614159cc0ad6d566c331c1fd97eaf18
+      size: 22043
+    - path: data/processed/train_clean.csv
+      hash: md5
+      md5: ee042a2318a89e832ca934b727aaa187
+      size: 72981
+    - path: monitoring/drift_monitor.py
+      hash: md5
+      md5: 8be8da9e18dc751fc0c90f8f61990060
+      size: 9599
+    params:
+      params.yaml:
+        monitoring.ks_alpha: 0.05
+        monitoring.psi_alert_threshold: 0.25
+        monitoring.psi_bins: 10
+        monitoring.psi_warn_threshold: 0.1
+    outs:
+    - path: monitoring/reports/drift_report.json
+      hash: md5
+      md5: f528b826eac18311ccf21086606645db
+      size: 8550
