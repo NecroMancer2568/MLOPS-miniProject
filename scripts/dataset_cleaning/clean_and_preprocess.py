@@ -240,6 +240,7 @@ def run_pipeline(
     df_later, later_target_outliers = clean_target_outliers(df_later, "later")
 
     # 3. Impute nearby_shops
+    train_nearby_shops_imputed = int((df_train["nearby_shops"] < 0).sum())
     (df_train, [df_later, df_holdout], imputer_meta) = impute_nearby_shops(
         df_train=df_train,
         other_dfs=[(df_later, "later"), (df_holdout, "holdout")],
@@ -273,7 +274,7 @@ def run_pipeline(
         "corrections": {
             "train": {
                 "rows": len(df_train),
-                "nearby_shops_imputed": 45,
+                "nearby_shops_imputed": train_nearby_shops_imputed,
                 "avg_ticket_scaled": train_small_tickets,
                 "target_outliers_fixed": train_target_outliers,
             },

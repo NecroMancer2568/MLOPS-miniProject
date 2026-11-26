@@ -1,5 +1,5 @@
 {
-  "input_directory": "data",
+  "input_directory": "data/raw",
   "output_directory": "data/processed",
   "imputation": {
     "strategy": "group_median",
