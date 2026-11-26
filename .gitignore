@@ -4,3 +4,8 @@ __pycache__/
 *.py[cod]
 data/later.csv
 data/train.csv
+# Local MLflow tracking
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+mlruns/
